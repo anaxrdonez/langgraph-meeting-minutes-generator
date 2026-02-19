@@ -1,10 +1,9 @@
 from langgraph.graph import StateGraph, START, END
 from langchain_openai import ChatOpenAI
-from typing import TypedDict, List
+from typing import TypedDict, List, Annotated
 import os
 from tkinter import Tk, filedialog
-import openai
-
+from operator import add
 
 # Configuración
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
@@ -17,6 +16,7 @@ class State(TypedDict):
     action_items: List[str]     # Acciones y responsables
     minutes: str                # Minuta formal (acta reunión)
     summary: str                # Resumen ejecutivo
+    logs: Annotated[list[str], add]
 
 
 # ============= NODOS DEL WORKFLOW (GRAFO) =============
@@ -36,7 +36,10 @@ def participants_extractor(state: State) -> State:
     response = llm.invoke(prompt)
     participants = [p.strip() for p in response.content.split(',') if p.strip()]
 
-    return {'participants': participants}
+    return {
+        'participants': participants,
+        'logs': ["Paso 1 completado"]
+        }
 
 
 def topics_analyzer(state: State) -> State:
@@ -55,7 +58,10 @@ def topics_analyzer(state: State) -> State:
 
     print(f"Temas identificados: {len(topics)} temas.")
 
-    return {'topics': topics}
+    return {
+        'topics': topics,
+        'logs': ["Paso 2 completado"]
+        }
 
 
 def actions_extractor(state: State) -> State:
@@ -79,7 +85,10 @@ def actions_extractor(state: State) -> State:
 
     print(f"Acciones extraídas: {len(action_items)} items.")
 
-    return {'action_items': action_items}
+    return {
+        'action_items': action_items,
+        'logs': ["Paso 3 completado"]
+        }
 
 
 def min_generator(state: State) -> State:
@@ -195,7 +204,8 @@ def process_meeting_notes(notes: str, app):
         'topics': [],
         'action_items': [],
         'minutes': '',
-        'summary': ''
+        'summary': '',
+        'logs': []
     }
     
     print("\n" + "="*60)
@@ -234,6 +244,8 @@ def display_results(result: State, meeting_num: int):
     print(f"   {result['summary']}")
     
     print("\n" + "="*60)
+
+    print(result['logs'])
 
 # ============= DEMOSTRACIÓN =============
 
